@@ -1,0 +1,76 @@
+pub mod connection {
+    use anyhow::{Context, Result};
+    use thiserror::Error;
+    use crate::config::{Connection, add_connection, connection_exists};
+    use dialoguer::Input;
+    use std::{collections::HashMap, net::Ipv4Addr, str::FromStr};
+
+    #[derive(Error, Debug)]
+    pub enum ConnectionError {
+        #[error("The name '{0}', is already used.")]
+        NameAlreadyExist(String),
+    }
+
+    pub fn add(name: &str) -> Result<()> { 
+        if connection_exists(name.to_string()).context("Error when check if connections name is already used")? {
+            return Err(ConnectionError::NameAlreadyExist(name.to_string()).into());
+        }
+        eprintln!("Create new connection :");
+
+        let host: Ipv4Addr = loop {
+            let host_input: String = Input::new()
+                .with_prompt("Host IP (required)")
+                .interact_text()
+                .unwrap();
+            
+            match Ipv4Addr::from_str(&host_input) {
+                Ok(host) => break host,
+                Err(_) => eprintln!("Invalid IP, Try again."),
+            }
+            
+        };
+
+        let port: u16 = loop { 
+            let port_input: String = Input::new()
+                .allow_empty(true)
+                .with_prompt("Port (default: 22)")
+                .interact_text()
+                .unwrap();
+            
+            if port_input.trim().is_empty() {
+                break 22;
+            }
+
+            match port_input.trim().parse::<u16>() {
+                Ok(port) if port != 0 => break port,
+                Ok(_) => break 22,
+                Err(_) => eprintln!("Invalid Port, Try again."),
+            }
+        };
+
+        let user: String = Input::new()
+            .with_prompt("User (required)")
+            .interact_text()
+            .unwrap();
+
+        let description: String = Input::new()
+            .allow_empty(true)
+            .with_prompt("Description (optionnal)")
+            .interact_text()
+            .unwrap();
+
+        let mut connection = HashMap::new();
+        connection.insert(
+            name.to_string(),
+            Connection {
+                host: host,
+                port: port,
+                user: user,
+                description: Some(description),
+            }
+        );
+
+        add_connection(connection).context("Error when add connection")?; 
+        Ok(())
+    }
+}
