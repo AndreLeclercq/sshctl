@@ -11,8 +11,10 @@ pub enum ConnectionError {
 }
 
 pub fn add(name: &str) -> Result<()> { 
-    if connection_exists(name.to_string()).context("Error when check if connections name is already used")? {
-        return Err(ConnectionError::NameAlreadyExist(name.to_string()).into());
+    let name_lower: String = name.to_lowercase();
+
+    if connection_exists(name_lower.to_string()).context("Error when check if connections name is already used")? {
+        return Err(ConnectionError::NameAlreadyExist(name_lower.to_string()).into());
     }
     eprintln!("Create new connection :");
 
@@ -60,7 +62,7 @@ pub fn add(name: &str) -> Result<()> {
 
     let mut connection = HashMap::new();
     connection.insert(
-        name.to_string(),
+        name_lower.to_string(),
         Connection {
             host: host,
             port: port,

@@ -19,7 +19,9 @@ pub fn connection_exists(name: String) -> Result<bool> {
     let connections_path: PathBuf = config_connections_path().context("Error when get connections.toml path")?;
     let content = fs::read_to_string(connections_path).context("Error when read connections.toml file.")?;
     let config: Config = toml::from_str(&content)?;
-    Ok(config.connection.map_or(false, |connection| connection.contains_key(&name)))
+    Ok(config.connection.map_or(false, |connection| {
+        connection.keys().any(|key| key.to_lowercase() == name.to_lowercase())
+    }))
 }
 
 pub fn add_connection(connection: HashMap<String, Connection>) -> Result<()> {
