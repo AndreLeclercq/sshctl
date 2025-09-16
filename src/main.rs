@@ -24,7 +24,12 @@ enum Commands {
 enum ConnectionCommands {
     #[command(about = "Add new connection to the config file")]
     Add {
-        #[arg(required=true)]
+        #[arg(required = true)]
+        name: String,
+    },
+    #[command(about = "Remove connection to the config file")]
+    Remove {
+        #[arg(required = true)]
         name: String,
     }
 }
@@ -36,6 +41,7 @@ fn main() -> Result<()> {
         Commands::Connection { connection_command } => {
             match connection_command {
                 ConnectionCommands::Add { name } => commands::connection::add(name)?,
+                ConnectionCommands::Remove { name } => commands::connection::remove(name)?,
             }
         }
     }
