@@ -1,13 +1,16 @@
 use anyhow::{Context, Result};
 use thiserror::Error;
-use crate::config::{Connection, add_connection, connection_exists};
+use crate::config::{Connection, add_connection, remove_connection, connection_exists};
 use dialoguer::Input;
 use std::{collections::HashMap, net::Ipv4Addr, str::FromStr};
 
 #[derive(Error, Debug)]
 pub enum ConnectionError {
-    #[error("The name '{0}', is already used.")]
+    #[error("Connection name '{0}', is already used.")]
     NameAlreadyExist(String),
+
+    #[error("Connection name '{0}', not found.")]
+    NameNotFound(String),
 }
 
 pub fn add(name: &str) -> Result<()> { 
@@ -28,7 +31,6 @@ pub fn add(name: &str) -> Result<()> {
             Ok(host) => break host,
             Err(_) => eprintln!("Invalid IP, Try again."),
         }
-
     };
 
     let port: u16 = loop { 
@@ -71,6 +73,20 @@ pub fn add(name: &str) -> Result<()> {
         }
     );
 
-    add_connection(connection).context("Error when add connection")?; 
+    add_connection(connection).context("Error when add connection")?;
+    eprintln!("New connection '{}' add with success !", name_lower);
     Ok(())
+}
+
+pub fn remove(name: &str) -> Result<()> {
+    let name_lower: String = name.to_lowercase();
+
+    if !connection_exists(name_lower.to_string()).context("Error when check if connections name is already used")? {
+        return Err(ConnectionError::NameNotFound(name_lower.to_string()).into());
+    }
+
+    remove_connection(name_lower.to_string())?;
+    eprintln!("Connection '{}' remove with success !", name_lower);
+    Ok(())
+
 }

@@ -25,21 +25,36 @@ pub fn connection_exists(name: String) -> Result<bool> {
 }
 
 pub fn add_connection(connection: HashMap<String, Connection>) -> Result<()> {
+    let mut config_file: Config = get_connection_file_content().context("Error when getting connection file content")?;
+    let connections = config_file.connection.get_or_insert_with(HashMap::new);
+    connections.extend(connection);
+    let toml = toml::to_string(&config_file)?;
+    let connections_path: PathBuf = config_connections_path().context("Error when get config path")?;
+    fs::write(connections_path, toml).context("Error when write into config file")?;
+    Ok(())
+}
+
+pub fn remove_connection(name: String) -> Result<()> {
+    let mut config_file: Config = get_connection_file_content().context("Error when getting connection file content")?;
+    if let Some(ref mut connection) = config_file.connection {
+        connection.remove(&name);
+    }
+    let toml = toml::to_string(&config_file)?;
+    let connections_path: PathBuf = config_connections_path().context("Error when get config path")?;
+    fs::write(connections_path, toml).context("Error when write into config file")?;
+    Ok(())
+}
+
+fn get_connection_file_content() -> Result<Config> {
     let connections_path: PathBuf = config_connections_path().context("Error when get config path")?;
     let content = fs::read_to_string(&connections_path).context("Error when read connections.toml file.")?;
-    
-    let mut config_file: Config = if content.is_empty() {
+
+    let config_file: Config = if content.is_empty() {
         Config::default()
     } else {
         toml::from_str(&content).context("Error when parsing TOML")?
     };
-
-    let connections = config_file.connection.get_or_insert_with(HashMap::new);
-    connections.extend(connection);
-    let toml = toml::to_string(&config_file)?;
-    fs::write(connections_path, toml).context("Error when write into config file")?;
-
-    Ok(())
+    Ok(config_file)
 }
 
 fn config_directory_path() -> Result<PathBuf> {
