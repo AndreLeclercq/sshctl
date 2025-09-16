@@ -50,8 +50,9 @@ port = 22
 - `anyhow` : error handling
 - `thiserror` : custom error types
 
-### TODO v0.1.0
+### TODO v0.1.x
 
+- [ ] Command `sshctl connection add <NAME>`
 - [ ] Command `sshctl connection remove <NAME>`
 - [ ] Command `sshctl connection edit <NAME>`
 - [ ] Command `sshctl connection list`
