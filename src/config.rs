@@ -24,16 +24,6 @@ pub fn connection_exists(name: String) -> Result<bool> {
     }))
 }
 
-pub fn add_connection(connection: HashMap<String, Connection>) -> Result<()> {
-    let mut config_file: Config = get_connection_file_content().context("Error when getting connection file content")?;
-    let connections = config_file.connection.get_or_insert_with(HashMap::new);
-    connections.extend(connection);
-    let toml = toml::to_string(&config_file)?;
-    let connections_path: PathBuf = config_connections_path().context("Error when get config path")?;
-    fs::write(connections_path, toml).context("Error when write into config file")?;
-    Ok(())
-}
-
 pub fn remove_connection(name: String) -> Result<()> {
     let mut config_file: Config = get_connection_file_content().context("Error when getting connection file content")?;
     if let Some(ref mut connection) = config_file.connection {
@@ -43,6 +33,30 @@ pub fn remove_connection(name: String) -> Result<()> {
     let connections_path: PathBuf = config_connections_path().context("Error when get config path")?;
     fs::write(connections_path, toml).context("Error when write into config file")?;
     Ok(())
+}
+
+pub fn upsert_connection(new_connection: HashMap<String, Connection>) -> Result<()> {
+    let mut config_file: Config = get_connection_file_content().context("Error when getting connection file content")?;
+
+    let connections = config_file.connection.get_or_insert_with(HashMap::new);
+    for (name, new_conn) in new_connection {
+        connections.insert(name, new_conn);
+    }
+
+    let toml = toml::to_string(&config_file)?;
+    let connections_path: PathBuf = config_connections_path().context("Error when get config path")?;
+    fs::write(connections_path, toml).context("Error when write into config file")?;
+    Ok(())
+}
+
+pub fn get_connection(name: String) -> Result<HashMap<String, Connection>> {
+    let config_file: Config = get_connection_file_content().context("Error when getting connection file content")?;
+    let result_connection = config_file.connection
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|(key, _)| key == &name)
+        .collect();
+    Ok(result_connection)
 }
 
 fn get_connection_file_content() -> Result<Config> {
