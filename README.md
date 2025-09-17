@@ -13,17 +13,26 @@ cargo build --release
 ### Add connection
 
 ```bash
-sshctl connection add <name> 
+sshctl connection add <NAME> 
 ```
 
 Example:
 ```bash
 sshctl connection add prod-server 
 ```
+### Edit connection
+```bash
+sshctl connection edit <NAME>
+```
+
+Example:
+```bash
+sshctl connection edit prod-server
+```
 
 ### Remove connection 
 ```bash
-sshctl connection remove <name>
+sshctl connection remove <NAME>
 ```
 
 Example:
@@ -64,7 +73,8 @@ port = 22
 
 - [x] Command `sshctl connection add <NAME>`
 - [x] Command `sshctl connection remove <NAME>`
-- [ ] Command `sshctl connection edit <NAME>`
+- [x] Command `sshctl connection edit <NAME>`
+- [ ] Command `sshctl connection show <NAME>`
 - [ ] Command `sshctl connection list`
 - [ ] Command `sshctl <NAME>`
 
