@@ -17,7 +17,9 @@ enum Commands {
     Connection {
         #[command(subcommand)]
         connection_command: ConnectionCommands,
-    }
+    },
+    #[command(external_subcommand)]
+    External(Vec<String>),
 }
 
 #[derive(Subcommand)]
@@ -57,6 +59,12 @@ fn main() -> Result<()> {
                 ConnectionCommands::Edit { name } => commands::connection::edit(name)?,
                 ConnectionCommands::Show { name } => commands::connection::show(name)?,
                 ConnectionCommands::List {  } => commands::connection::list()?,
+            }
+        }
+        Commands::External(args) => {
+            if let Some(name) = args.first() {
+                eprintln!("Try connecting to: {}", name);
+                commands::connect(name)?;
             }
         }
     }
