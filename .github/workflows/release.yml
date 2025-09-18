@@ -41,7 +41,7 @@ jobs:
   # Update AUR binary package (stable releases only)
   update-aur-bin:
     needs: create-release
-    uses: ./.github/workflows/update-aur-bin.yml  
+    uses: ./.github/workflows/update-aur.yml  
     with:
       version: ${{ github.event.inputs.version || github.ref_name }}
     secrets: inherit
