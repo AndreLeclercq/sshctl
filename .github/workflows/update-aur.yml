@@ -89,7 +89,7 @@ jobs:
 
           build() {
               cd "\${srcdir}/sshctl"
-              cargo build --release --locked
+              cargo build --release
           }
 
           package() {
