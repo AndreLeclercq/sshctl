@@ -17,9 +17,7 @@ jobs:
       - name: Setup SSH for AUR
         run: |
           mkdir -p ~/.ssh
-          cat > ~/.ssh/aur << 'EOF'
-          ${{ secrets.AUR_SSH_KEY }}
-          EOF
+          echo "${{ secrets.AUR_SSH_KEY }}" > ~/.ssh/aur
           chmod 600 ~/.ssh/aur
           ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
       
