@@ -59,7 +59,7 @@ pub fn get_connection(name: String) -> Result<HashMap<String, Connection>> {
     Ok(result_connection)
 }
 
-fn get_connection_file_content() -> Result<Config> {
+pub fn get_connection_file_content() -> Result<Config> {
     let connections_path: PathBuf = config_connections_path().context("Error when get config path")?;
     let content = fs::read_to_string(&connections_path).context("Error when read connections.toml file.")?;
 

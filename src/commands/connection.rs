@@ -1,6 +1,8 @@
 use anyhow::{Context, Result};
 use thiserror::Error;
-use crate::config::{Connection, upsert_connection, remove_connection, get_connection, connection_exists};
+use crate::config::{
+    connection_exists, get_connection, get_connection_file_content, remove_connection, upsert_connection, Config, Connection
+};
 use dialoguer::Input;
 use std::{collections::HashMap, net::Ipv4Addr, str::FromStr};
 
@@ -179,5 +181,16 @@ pub fn show(name: &str) -> Result<()> {
         eprintln!("Description: {}", connection.description.as_deref().unwrap_or(""));
     }
 
+    Ok(())
+}
+
+pub fn list() -> Result<()> {
+    let config_file: Config = get_connection_file_content().context("Error when getting connection file content.")?;
+    if let Some(connections) = config_file.connection {
+        eprintln!("List of connections:");
+        for name in connections.keys() {
+            eprintln!("{}", name);
+        }
+    }
     Ok(())
 }
