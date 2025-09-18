@@ -11,7 +11,13 @@ on:
 jobs:
   update-aur:
     runs-on: ubuntu-latest
+    container: archlinux:latest
     steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm git openssh base-devel
+      
       - name: Checkout
         uses: actions/checkout@v4
       
@@ -94,28 +100,6 @@ jobs:
               fi
           }
           EOF
-      
-      - name: Install makepkg
-        run: |
-          # Install Arch build tools on Ubuntu
-          sudo apt-get update
-          sudo apt-get install -y wget
-          
-          # Download and install pacman-package-manager (includes makepkg)
-          wget https://github.com/archlinux/pacman/releases/download/v6.0.2/pacman-6.0.2.tar.xz
-          tar -xf pacman-6.0.2.tar.xz
-          cd pacman-6.0.2
-          
-          # Install dependencies
-          sudo apt-get install -y build-essential meson ninja-build libarchive-dev libcurl4-openssl-dev libgpgme-dev
-          
-          # Build and install
-          meson setup build
-          meson compile -C build
-          sudo meson install -C build
-          
-          # Add to PATH
-          echo "/usr/local/bin" >> $GITHUB_PATH
       
       - name: Generate .SRCINFO
         run: |
