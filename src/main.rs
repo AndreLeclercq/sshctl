@@ -41,7 +41,9 @@ enum ConnectionCommands {
     Show {
         #[arg(required = true)]
         name: String,
-    }
+    },
+    #[command(about = "List all connections")]
+    List {}
 }
 
 fn main() -> Result<()> {
@@ -54,6 +56,7 @@ fn main() -> Result<()> {
                 ConnectionCommands::Remove { name } => commands::connection::remove(name)?,
                 ConnectionCommands::Edit { name } => commands::connection::edit(name)?,
                 ConnectionCommands::Show { name } => commands::connection::show(name)?,
+                ConnectionCommands::List {  } => commands::connection::list()?,
             }
         }
     }
