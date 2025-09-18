@@ -50,14 +50,14 @@ jobs:
           export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
           
           # Attempts to clone existing package
-          if git clone ssh://aur@aur.archlinux.org/sshctl-git.git aur-repo; then
+          if git clone ssh://aur@aur.archlinux.org/sshctl.git aur-repo; then
             echo "✅ Existing AUR package cloned"
           else
             echo "📦 Creating new AUR package"
             mkdir aur-repo
             cd aur-repo
             git init
-            git remote add origin ssh://aur@aur.archlinux.org/sshctl-git.git
+            git remote add origin ssh://aur@aur.archlinux.org/sshctl.git
             cd ..
           fi
       
@@ -73,10 +73,10 @@ jobs:
           cd aur-repo
           cat > PKGBUILD << EOF
           # Maintainer: ${{ secrets.AUR_MAINTAINER_NAME }} <${{ secrets.AUR_MAINTAINER_EMAIL }}>
-          pkgname=sshctl-git
+          pkgname=sshctl
           pkgver=${{ steps.version.outputs.version }}
           pkgrel=1
-          pkgdesc="SSH connection manager CLI tool"
+          pkgdesc="SSH connection manager CLI tool (binary stable)"
           arch=('x86_64')
           url="https://github.com/${{ github.repository }}"
           license=('MIT')
@@ -133,7 +133,7 @@ jobs:
           # Ensure we're in a proper git directory
           if [ ! -d .git ]; then
             git init
-            git remote add origin ssh://aur@aur.archlinux.org/sshctl-git.git
+            git remote add origin ssh://aur@aur.archlinux.org/sshctl.git
             git branch -M master
           fi
           
