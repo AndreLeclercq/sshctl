@@ -9,7 +9,7 @@ on:
       version:
         description: 'Version tag (e.g., v0.1.5)'
         required: true
-        default: 'v0.0.0-test'
+        default: 'v0.0.0'
 
 jobs:
   # Build Linux
@@ -38,10 +38,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Update AUR package
-  update-aur:
+  # Update AUR binary package (stable releases only)
+  update-aur-bin:
     needs: create-release
-    uses: ./.github/workflows/update-aur.yml
+    uses: ./.github/workflows/update-aur-bin.yml  
     with:
       version: ${{ github.event.inputs.version || github.ref_name }}
     secrets: inherit
