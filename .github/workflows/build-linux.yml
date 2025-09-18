@@ -1,0 +1,39 @@
+name: Build Linux
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Build
+        run: cargo build --release
+      
+      - name: Get binary name
+        id: binary
+        run: |
+          BINARY_NAME=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].name')
+          echo "name=${BINARY_NAME}" >> $GITHUB_OUTPUT
+      
+      - name: Create archive
+        run: |
+          ARCHIVE_NAME="${{ steps.binary.outputs.name }}-${{ inputs.version }}-linux-x86_64.tar.xz"
+          tar -cJf "${ARCHIVE_NAME}" -C target/release "${{ steps.binary.outputs.name }}"
+          echo "archive=${ARCHIVE_NAME}" >> $GITHUB_ENV
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: ${{ env.archive }}
