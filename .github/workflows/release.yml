@@ -1,11 +1,10 @@
-
 name: Release
 
 on:
   push:
     tags:
-      - 'v*' 
-  workflow_dispatch:
+      - 'v*'  
+  workflow_dispatch:  
     inputs:
       version:
         description: 'Version tag (e.g., v0.1.5)'
@@ -16,6 +15,7 @@ env:
   VERSION: ${{ github.event.inputs.version || github.ref_name }}
 
 jobs:
+  # Build Linux
   build-linux:
     uses: ./.github/workflows/build-linux.yml
     with:
@@ -40,6 +40,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Update AUR package
   update-aur:
     needs: create-release
     uses: ./.github/workflows/update-aur.yml
