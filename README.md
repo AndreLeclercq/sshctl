@@ -10,6 +10,16 @@ cargo build --release
 
 ## Commands
 
+### Connect 
+```bash
+sshctl <NAME>
+```
+
+Example:
+```bash
+sshctl prod-server
+```
+
 ### Add connection
 
 ```bash
@@ -92,5 +102,5 @@ port = 22
 - [x] Command `sshctl connection edit <NAME>`
 - [x] Command `sshctl connection show <NAME>`
 - [x] Command `sshctl connection list`
-- [ ] Command `sshctl <NAME>`
+- [x] Command `sshctl <NAME>`
 
