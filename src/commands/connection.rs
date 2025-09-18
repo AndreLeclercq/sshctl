@@ -99,8 +99,8 @@ pub fn edit(name: &str) -> Result<()> {
         return Err(ConnectionError::NameNotFound(name_lower.to_string()).into());
     }
 
-    let existing_connection = get_connection(name.to_string())?;
-    if let Some(connection) = existing_connection.get(name) {    
+    let existing_connection = get_connection(name_lower.to_string())?;
+    if let Some(connection) = existing_connection.get(&name_lower) {    
 
         let host: Ipv4Addr = loop {
             let host_input: String = Input::new()
