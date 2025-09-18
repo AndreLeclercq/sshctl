@@ -1,3 +1,4 @@
+# Update AUR package
 name: Update AUR
 
 on:
@@ -98,8 +99,25 @@ jobs:
         run: |
           cd aur-repo
           
-          # Generate .SRCINFO (makepkg should be available on ubuntu-latest)
-          makepkg --printsrcinfo > .SRCINFO
+          # Generate .SRCINFO manually (makepkg not available on Ubuntu)
+          cat > .SRCINFO << EOF
+          pkgbase = sshctl-git
+          	pkgdesc = SSH connection manager CLI tool
+          	pkgver = ${{ steps.version.outputs.version }}
+          	pkgrel = 1
+          	url = https://github.com/${{ github.repository }}
+          	arch = x86_64
+          	license = MIT
+          	depends = glibc
+          	makedepends = git
+          	makedepends = rust
+          	provides = sshctl
+          	conflicts = sshctl
+          	source = git+https://github.com/${{ github.repository }}.git#tag=${{ inputs.version }}
+          	sha256sums = SKIP
+
+          pkgname = sshctl-git
+          EOF
       
       - name: Commit and push to AUR
         run: |
