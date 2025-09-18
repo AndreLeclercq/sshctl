@@ -40,6 +40,16 @@ Example:
 sshctl connection remove prod-server
 ```
 
+### Show connection
+```bash
+sshctl connection show <NAME>
+```
+
+Example:
+```bash
+sshctl connection show prod-server
+```
+
 ## Configuration
 
 Connections are saved in `~/.config/sshctl/connections.toml` (or OS equivalent).
@@ -74,7 +84,7 @@ port = 22
 - [x] Command `sshctl connection add <NAME>`
 - [x] Command `sshctl connection remove <NAME>`
 - [x] Command `sshctl connection edit <NAME>`
-- [ ] Command `sshctl connection show <NAME>`
+- [x] Command `sshctl connection show <NAME>`
 - [ ] Command `sshctl connection list`
 - [ ] Command `sshctl <NAME>`
 
