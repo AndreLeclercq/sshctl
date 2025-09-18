@@ -84,7 +84,7 @@ jobs:
           makedepends=('git' 'rust')
           provides=('sshctl')
           conflicts=('sshctl')
-          source=("git+https://github.com/${{ github.repository }}.git#tag=${{ inputs.version }}")
+          source=("git+https://github.com/${{ github.repository }}.git")
           sha256sums=('SKIP')
 
           build() {
