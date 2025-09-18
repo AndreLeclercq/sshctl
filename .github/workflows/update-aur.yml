@@ -26,15 +26,34 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.AUR_SSH_KEY }}" > ~/.ssh/aur
           chmod 600 ~/.ssh/aur
+          chmod 700 ~/.ssh
           ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+          
+          # Debug: Check key format
+          echo "🔍 SSH key info:"
+          head -1 ~/.ssh/aur | cut -c1-20
+          wc -l ~/.ssh/aur
       
       - name: Test AUR connection
         run: |
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o StrictHostKeyChecking=no"
+          
+          # Debug connection
+          echo "🔍 Testing SSH connection with debug..."
+          ssh -i ~/.ssh/aur -T -v aur@aur.archlinux.org 2>&1 | tail -10
+          
           if ssh -i ~/.ssh/aur -T aur@aur.archlinux.org 2>&1 | grep -q "Welcome to AUR"; then
             echo "✅ AUR connection successful"
           else
             echo "❌ AUR connection failed"
+            echo "🔍 Let's try some debugging..."
+            
+            # Test basic connectivity
+            ping -c 3 aur.archlinux.org || echo "No ping response (normal for some servers)"
+            
+            # Test SSH port
+            nc -zv aur.archlinux.org 22 2>&1
+            
             exit 1
           fi
       
