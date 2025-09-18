@@ -1,0 +1,144 @@
+# Update AUR git package on main branch changes
+name: Update AUR Git (Development)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  update-aur-git-dev:
+    # Only run if there are actual code changes, not just workflow changes
+    if: contains(github.event.head_commit.modified, 'src/') || contains(github.event.head_commit.added, 'src/') || contains(github.event.head_commit.message, '[force-aur]')
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm git openssh base-devel
+      
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for version calculation
+      
+      - name: Setup SSH for AUR
+        run: |
+          mkdir -p /root/.ssh
+          echo "${{ secrets.AUR_SSH_KEY }}" > /root/.ssh/aur
+          chmod 600 /root/.ssh/aur
+          chmod 700 /root/.ssh
+          ssh-keyscan aur.archlinux.org >> /root/.ssh/known_hosts
+      
+      - name: Test AUR connection
+        run: |
+          if ssh -i /root/.ssh/aur -T aur@aur.archlinux.org 2>&1 | grep -q "Welcome to AUR"; then
+            echo "AUR connection successful"
+          else
+            echo "AUR connection failed"
+            exit 1
+          fi
+      
+      - name: Clone AUR git package
+        run: |
+          export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
+          git clone ssh://aur@aur.archlinux.org/sshctl-git.git aur-repo
+      
+      - name: Calculate development version
+        id: version
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          
+          # Get commit count since latest tag  
+          COMMIT_COUNT=$(git rev-list --count ${LATEST_TAG}..HEAD 2>/dev/null || git rev-list --count HEAD)
+          
+          # Get short commit hash
+          SHORT_HASH=$(git rev-parse --short HEAD)
+          
+          # Create development version: latest_tag.r.commit_count.hash
+          DEV_VERSION="${LATEST_TAG#v}.r${COMMIT_COUNT}.${SHORT_HASH}"
+          
+          echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
+          echo "Development version: ${DEV_VERSION}"
+      
+      - name: Create development PKGBUILD
+        run: |
+          cd aur-repo
+          cat > PKGBUILD << EOF
+          # Maintainer: ${{ secrets.AUR_MAINTAINER_NAME }} <${{ secrets.AUR_MAINTAINER_EMAIL }}>
+          pkgname=sshctl-git
+          pkgver=${{ steps.version.outputs.dev_version }}
+          pkgrel=1
+          pkgdesc="SSH connection manager CLI tool (development version)"
+          arch=('x86_64')
+          url="https://github.com/${{ github.repository }}"
+          license=('MIT')
+          depends=('glibc')
+          makedepends=('git' 'rust')
+          provides=('sshctl')
+          conflicts=('sshctl')
+          source=("git+https://github.com/${{ github.repository }}.git")
+          sha256sums=('SKIP')
+
+          pkgver() {
+              cd "\${srcdir}/sshctl"
+              printf "\$(git describe --tags --long 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' || echo '0.0.0.r\$(git rev-list --count HEAD).\$(git rev-parse --short HEAD)')"
+          }
+
+          build() {
+              cd "\${srcdir}/sshctl"
+              cargo build --release
+          }
+
+          package() {
+              cd "\${srcdir}/sshctl"
+              install -Dm755 "target/release/sshctl" "\${pkgdir}/usr/bin/sshctl"
+              
+              # Documentation
+              if [ -f README.md ]; then
+                  install -Dm644 README.md "\${pkgdir}/usr/share/doc/sshctl/README.md"
+              fi
+              
+              # License
+              if [ -f LICENSE ]; then
+                  install -Dm644 LICENSE "\${pkgdir}/usr/share/licenses/sshctl/LICENSE"
+              fi
+          }
+          EOF
+      
+      - name: Generate .SRCINFO for development package
+        run: |
+          cd aur-repo
+          
+          # Create non-root user for makepkg
+          useradd -m -s /bin/bash builder
+          
+          # Copy PKGBUILD to builder's home and generate .SRCINFO there
+          cp PKGBUILD /home/builder/
+          chown builder:builder /home/builder/PKGBUILD
+          
+          # Generate .SRCINFO as non-root user
+          su builder -c "cd /home/builder && makepkg --printsrcinfo" > .SRCINFO
+          
+          # Ensure root owns the .SRCINFO in the repo
+          chown root:root .SRCINFO
+      
+      - name: Commit and push development version to AUR
+        run: |
+          cd aur-repo
+          export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
+          
+          git config user.name "${{ secrets.AUR_MAINTAINER_NAME }}"
+          git config user.email "${{ secrets.AUR_MAINTAINER_EMAIL }}"
+          
+          git add PKGBUILD .SRCINFO
+          
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update development version to ${{ steps.version.outputs.dev_version }}"
+            git push origin master
+            echo "AUR development package updated successfully!"
+          fi
