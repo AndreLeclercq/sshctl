@@ -1,6 +1,8 @@
 # SSHCTL
 
-CLI tool for managing SSH connections easily and efficiently.
+**SSHCTL** is a lightweight CLI tool designed to simplify and streamline SSH connection management. It allows you to store, edit, and quickly connect to your servers using intuitive commands.
+
+**Note:** This project is in its early stages of development. While the core functionality is already usable, stable releases are coming soon. Currently, the focus is on Linux compatibility, as it aligns with my personal workflow. However, support for **Windows and macOS** is planned if there is community interest—feel free to open an issue!
 
 ## Installation
 
@@ -95,12 +97,8 @@ port = 22
 - `anyhow` : error handling
 - `thiserror` : custom error types
 
-### TODO v0.1.x
+### TODO v0.2.x
 
-- [x] Command `sshctl connection add <NAME>`
-- [x] Command `sshctl connection remove <NAME>`
-- [x] Command `sshctl connection edit <NAME>`
-- [x] Command `sshctl connection show <NAME>`
-- [x] Command `sshctl connection list`
-- [x] Command `sshctl <NAME>`
+- [ ] Manage ssh keys
+- [ ] Improve connection commands
 
