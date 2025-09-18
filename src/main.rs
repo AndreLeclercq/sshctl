@@ -36,6 +36,11 @@ enum ConnectionCommands {
     Edit {
         #[arg(required = true)]
         name: String,
+    },
+    #[command(about = "Show connection informations")]
+    Show {
+        #[arg(required = true)]
+        name: String,
     }
 }
 
@@ -48,6 +53,7 @@ fn main() -> Result<()> {
                 ConnectionCommands::Add { name } => commands::connection::add(name)?,
                 ConnectionCommands::Remove { name } => commands::connection::remove(name)?,
                 ConnectionCommands::Edit { name } => commands::connection::edit(name)?,
+                ConnectionCommands::Show { name } => commands::connection::show(name)?,
             }
         }
     }
