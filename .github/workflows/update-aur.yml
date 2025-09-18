@@ -114,11 +114,16 @@ jobs:
           
           # Create non-root user for makepkg
           useradd -m -s /bin/bash builder
-          chown -R builder:builder /home/builder
-          chown -R builder:builder .
+          
+          # Copy PKGBUILD to builder's home and generate .SRCINFO there
+          cp PKGBUILD /home/builder/
+          chown builder:builder /home/builder/PKGBUILD
           
           # Generate .SRCINFO as non-root user
-          su builder -c "makepkg --printsrcinfo" > .SRCINFO
+          su builder -c "cd /home/builder && makepkg --printsrcinfo" > .SRCINFO
+          
+          # Ensure root owns the .SRCINFO in the repo
+          chown root:root .SRCINFO
       
       - name: Commit and push to AUR
         run: |
