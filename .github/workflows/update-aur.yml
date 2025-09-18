@@ -125,6 +125,13 @@ jobs:
           cd aur-repo
           export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
           
+          # Ensure we're in a proper git directory
+          if [ ! -d .git ]; then
+            git init
+            git remote add origin ssh://aur@aur.archlinux.org/sshctl-git.git
+            git branch -M master
+          fi
+          
           git config user.name "${{ secrets.AUR_MAINTAINER_NAME }}"
           git config user.email "${{ secrets.AUR_MAINTAINER_EMAIL }}"
           
