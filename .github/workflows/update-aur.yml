@@ -1,0 +1,122 @@
+name: Update AUR
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+jobs:
+  update-aur:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup SSH for AUR
+        run: |
+          mkdir -p ~/.ssh
+          cat > ~/.ssh/aur << 'EOF'
+          ${{ secrets.AUR_SSH_KEY }}
+          EOF
+          chmod 600 ~/.ssh/aur
+          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+      
+      - name: Test AUR connection
+        run: |
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o StrictHostKeyChecking=no"
+          if ssh -i ~/.ssh/aur -T aur@aur.archlinux.org 2>&1 | grep -q "Welcome to AUR"; then
+            echo "✅ AUR connection successful"
+          else
+            echo "❌ AUR connection failed"
+            exit 1
+          fi
+      
+      - name: Clone or create AUR package
+        run: |
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o StrictHostKeyChecking=no"
+          
+          # Attempts to clone existing package
+          if git clone ssh://aur@aur.archlinux.org/sshctl-git.git aur-repo; then
+            echo "✅ Existing AUR package cloned"
+          else
+            echo "📦 Creating new AUR package"
+            mkdir aur-repo
+            cd aur-repo
+            git init
+            git remote add origin ssh://aur@aur.archlinux.org/sshctl-git.git
+            cd ..
+          fi
+      
+      - name: Extract version
+        id: version
+        run: |
+          VERSION="${{ inputs.version }}"
+          CLEAN_VERSION=${VERSION#v}  # Remove 'v' prefix
+          echo "version=${CLEAN_VERSION}" >> $GITHUB_OUTPUT
+      
+      - name: Create PKGBUILD
+        run: |
+          cd aur-repo
+          cat > PKGBUILD << 'EOF'
+          # Maintainer: ${{ secrets.AUR_MAINTAINER_NAME }} <${{ secrets.AUR_MAINTAINER_EMAIL }}>
+          pkgname=sshctl-git
+          pkgver=${{ steps.version.outputs.version }}
+          pkgrel=1
+          pkgdesc="SSH connection manager CLI tool"
+          arch=('x86_64')
+          url="https://github.com/${{ github.repository }}"
+          license=('MIT')
+          depends=('glibc')
+          makedepends=('git' 'rust')
+          provides=('sshctl')
+          conflicts=('sshctl')
+          source=("git+https://github.com/${{ github.repository }}.git#tag=${{ inputs.version }}")
+          sha256sums=('SKIP')
+
+          build() {
+              cd "${srcdir}/sshctl"
+              cargo build --release --locked
+          }
+
+          package() {
+              cd "${srcdir}/sshctl"
+              install -Dm755 "target/release/sshctl" "${pkgdir}/usr/bin/sshctl"
+              
+              # Documentation
+              if [ -f README.md ]; then
+                  install -Dm644 README.md "${pkgdir}/usr/share/doc/sshctl/README.md"
+              fi
+              
+              # License
+              if [ -f LICENSE ]; then
+                  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/sshctl/LICENSE"
+              fi
+          }
+          EOF
+      
+      - name: Generate .SRCINFO
+        run: |
+          cd aur-repo
+          
+          # Generate .SRCINFO (makepkg should be available on ubuntu-latest)
+          makepkg --printsrcinfo > .SRCINFO
+      
+      - name: Commit and push to AUR
+        run: |
+          cd aur-repo
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o StrictHostKeyChecking=no"
+          
+          git config user.name "${{ secrets.AUR_MAINTAINER_NAME }}"
+          git config user.email "${{ secrets.AUR_MAINTAINER_EMAIL }}"
+          
+          git add PKGBUILD .SRCINFO
+          
+          if git diff --cached --quiet; then
+            echo "ℹ️ No changes to commit"
+          else
+            git commit -m "Update to ${{ steps.version.outputs.version }}"
+            git push origin master
+            echo "🎉 AUR package updated successfully!"
+          fi
