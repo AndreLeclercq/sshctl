@@ -23,43 +23,31 @@ jobs:
       
       - name: Setup SSH for AUR
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.AUR_SSH_KEY }}" > ~/.ssh/aur
-          chmod 600 ~/.ssh/aur
-          chmod 700 ~/.ssh
-          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+          mkdir -p /root/.ssh
+          echo "${{ secrets.AUR_SSH_KEY }}" > /root/.ssh/aur
+          chmod 600 /root/.ssh/aur
+          chmod 700 /root/.ssh
+          ssh-keyscan aur.archlinux.org >> /root/.ssh/known_hosts
           
           # Debug: Check key format
           echo "🔍 SSH key info:"
-          head -1 ~/.ssh/aur | cut -c1-20
-          wc -l ~/.ssh/aur
+          head -1 /root/.ssh/aur | cut -c1-20
+          wc -l /root/.ssh/aur
       
       - name: Test AUR connection
         run: |
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o StrictHostKeyChecking=no"
+          export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
           
-          # Debug connection
-          echo "🔍 Testing SSH connection with debug..."
-          ssh -i ~/.ssh/aur -T -v aur@aur.archlinux.org 2>&1 | tail -10
-          
-          if ssh -i ~/.ssh/aur -T aur@aur.archlinux.org 2>&1 | grep -q "Welcome to AUR"; then
+          if ssh -i /root/.ssh/aur -T aur@aur.archlinux.org 2>&1 | grep -q "Welcome to AUR"; then
             echo "✅ AUR connection successful"
           else
             echo "❌ AUR connection failed"
-            echo "🔍 Let's try some debugging..."
-            
-            # Test basic connectivity
-            ping -c 3 aur.archlinux.org || echo "No ping response (normal for some servers)"
-            
-            # Test SSH port
-            nc -zv aur.archlinux.org 22 2>&1
-            
             exit 1
           fi
       
       - name: Clone or create AUR package
         run: |
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o StrictHostKeyChecking=no"
+          export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
           
           # Attempts to clone existing package
           if git clone ssh://aur@aur.archlinux.org/sshctl-git.git aur-repo; then
@@ -128,7 +116,7 @@ jobs:
       - name: Commit and push to AUR
         run: |
           cd aur-repo
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o StrictHostKeyChecking=no"
+          export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
           
           git config user.name "${{ secrets.AUR_MAINTAINER_NAME }}"
           git config user.email "${{ secrets.AUR_MAINTAINER_EMAIL }}"
