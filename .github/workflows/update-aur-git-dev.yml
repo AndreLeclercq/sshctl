@@ -8,22 +8,42 @@ on:
 
 jobs:
   update-aur-git-dev:
-    # Only run if there are actual code changes, not just workflow changes
-    if: contains(github.event.head_commit.modified, 'src/') || contains(github.event.head_commit.added, 'src/') || contains(github.event.head_commit.message, '[force-aur]')
     runs-on: ubuntu-latest
     container: archlinux:latest
     steps:
-      - name: Install dependencies
-        run: |
-          pacman -Syu --noconfirm
-          pacman -S --noconfirm git openssh base-devel
-      
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Need full history for version calculation
+          
+      - name: Check if we should run
+        id: should_run
+        run: |
+          # Vérifier si le message contient [force-aur]
+          if [[ "${{ github.event.head_commit.message }}" == *"[force-aur]"* ]]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+            echo "Forced AUR update via commit message"
+            exit 0
+          fi
+          
+          # Vérifier les fichiers modifiés (besoin de fetch pour comparer)
+          git fetch origin main~1 || true
+          if git diff --name-only HEAD~1 HEAD | grep -E '^src/|^Cargo\.(toml|lock)$|^README\.md$|^LICENSE$' || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+            echo "Relevant files changed or manual trigger"
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+            echo "No relevant changes found, skipping AUR update"
+          fi
+      
+      - name: Install dependencies
+        if: steps.should_run.outputs.run == 'true'
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm git openssh base-devel
       
       - name: Setup SSH for AUR
+        if: steps.should_run.outputs.run == 'true'
         run: |
           mkdir -p /root/.ssh
           echo "${{ secrets.AUR_SSH_KEY }}" > /root/.ssh/aur
@@ -32,6 +52,7 @@ jobs:
           ssh-keyscan aur.archlinux.org >> /root/.ssh/known_hosts
       
       - name: Test AUR connection
+        if: steps.should_run.outputs.run == 'true'
         run: |
           if ssh -i /root/.ssh/aur -T aur@aur.archlinux.org 2>&1 | grep -q "Welcome to AUR"; then
             echo "AUR connection successful"
@@ -41,11 +62,13 @@ jobs:
           fi
       
       - name: Clone AUR git package
+        if: steps.should_run.outputs.run == 'true'
         run: |
           export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
           git clone ssh://aur@aur.archlinux.org/sshctl-git.git aur-repo
       
       - name: Calculate development version
+        if: steps.should_run.outputs.run == 'true'
         id: version
         run: |
           # Get the latest tag
@@ -64,6 +87,7 @@ jobs:
           echo "Development version: ${DEV_VERSION}"
       
       - name: Create development PKGBUILD
+        if: steps.should_run.outputs.run == 'true'
         run: |
           cd aur-repo
           cat > PKGBUILD << EOF
@@ -109,6 +133,7 @@ jobs:
           EOF
       
       - name: Generate .SRCINFO for development package
+        if: steps.should_run.outputs.run == 'true'
         run: |
           cd aur-repo
           
@@ -126,6 +151,7 @@ jobs:
           chown root:root .SRCINFO
       
       - name: Commit and push development version to AUR
+        if: steps.should_run.outputs.run == 'true'
         run: |
           cd aur-repo
           export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
