@@ -1,8 +1,13 @@
 # SSHCTL
 
+[![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![AUR](https://img.shields.io/aur/version/sshctl?style=for-the-badge&logo=arch-linux)](https://aur.archlinux.org/packages/sshctl)
+[![GitHub release](https://img.shields.io/github/release/AndreLeclercq/sshctl.svg?style=for-the-badge)](https://github.com/AndreLeclercq/sshctl/releases)
+
 **SSHCTL** is a lightweight CLI tool designed to simplify and streamline SSH connection management. It allows you to store, edit, and quickly connect to your servers using intuitive commands.
 
-**Note:** This project is in its early stages of development. While the core functionality is already usable, stable releases are coming soon. Currently, the focus is on Linux compatibility, as it aligns with my personal workflow. However, support for **Windows and macOS** is planned if there is community interest—feel free to open an issue or discussions!
+**Note:** This project is in its early stages of development. While the core functionality is already usable Currently, the focus is on Linux compatibility, as it aligns with my personal workflow. However, support for **Windows and macOS** is planned if there is community interest—feel free to open an issue or discussions!
 
 ## Versioning & Stability
 
@@ -30,53 +35,23 @@ yay -S sshctl-git
 
 ## Commands
 
-### Connect 
 ```bash
-sshctl <connection-name>
-```
-Example:
-```bash
-sshctl prod-server
-```
+# Connect
+sshctl <connection-name> #ex: sshctl prod-server
 
-### Add connection
-```bash
-sshctl connection add <connection-name>
-```
-Example:
-```bash
-sshctl connection add prod-server 
-```
+# Add connection
+sshctl connection add <connection-name> #ex: sshctl connection add prod-server 
 
-### Edit connection
-```bash
-sshctl connection edit <connection-name>
-```
-Example:
-```bash
-sshctl connection edit prod-server
-```
+# Edit connection
+sshctl connection edit <connection-name> #ex: sshctl connection edit prod-server
 
-### Remove connection 
-```bash
-sshctl connection remove <connection-name>
-```
-Example:
-```bash
-sshctl connection remove prod-server
-```
+# Remove connection
+sshctl connection remove <connection-name> #ex: sshctl connection remove prod-server
 
-### Show connection
-```bash
-sshctl connection show <connection-name>
-```
-Example:
-```bash
-sshctl connection show prod-server
-```
+# Show connection
+sshctl connection show <connection-name> #ex: sshctl connection show prod-server
 
-### List connections
-```bash
+# List connections
 sshctl connection list
 ```
 
@@ -108,6 +83,16 @@ port = 22
 - `anyhow` : error handling
 - `thiserror` : custom error types
 
+### 🏗️ Architecture
+Built with performance-first mindset using Rust:
+- **Zero-copy parsing** with serde
+- **Minimal allocations** for config handling  
+- **Cross-platform** compatibility via dirs crate
+- **Interactive UX** with dialoguer
+
 ### TODO v0.2.x
 - [ ] Manage ssh keys
 - [ ] Improve connection commands
+
+---
+*Part of my transition journey from Fullstack Development to AI/Data Engineering, showcasing Rust for performance-critical applications.*
