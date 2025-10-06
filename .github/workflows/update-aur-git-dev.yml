@@ -87,7 +87,7 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         run: |
           cd aur-repo
-          cat > PKGBUILD << 'EOF'
+          cat > PKGBUILD << 'PKGBUILD_EOF'
           # Maintainer: ${{ secrets.AUR_MAINTAINER_NAME }} <${{ secrets.AUR_MAINTAINER_EMAIL }}>
           pkgname=sshctl-git
           pkgver=${{ steps.version.outputs.dev_version }}
@@ -105,11 +105,8 @@ jobs:
 
           pkgver() {
               cd "${srcdir}/sshctl"
-              # Extract version from Cargo.toml
               local cargo_ver=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-              # Get short commit hash (7 characters)
               local short_hash=$(git rev-parse --short=7 HEAD)
-              # Return version format: cargo_version-short_hash
               printf "%s-%s" "${cargo_ver}" "${short_hash}"
           }
 
@@ -122,17 +119,15 @@ jobs:
               cd "${srcdir}/sshctl"
               install -Dm755 "target/release/sshctl" "${pkgdir}/usr/bin/sshctl"
               
-              # Documentation
               if [ -f README.md ]; then
                   install -Dm644 README.md "${pkgdir}/usr/share/doc/sshctl/README.md"
               fi
               
-              # License
               if [ -f LICENSE ]; then
                   install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/sshctl/LICENSE"
               fi
           }
-          EOF
+          PKGBUILD_EOF
       
       - name: Generate .SRCINFO for development package
         if: steps.should_run.outputs.run == 'true'
