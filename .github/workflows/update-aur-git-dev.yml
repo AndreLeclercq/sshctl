@@ -19,156 +19,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Need full history for version calculation
+          fetch-depth: 0
+      
+      - name: Configure git safe directory
+        run: |
+          git config --global --add safe.directory /__w/sshctl/sshctl
       
       - name: Check if we should run
         id: should_run
         run: |
-          # Configure git safe directory
-          git config --global --add safe.directory /__w/sshctl/sshctl
-          
-          # Check if commit message contains [force-aur]
           if [[ "${{ github.event.head_commit.message }}" == *"[force-aur]"* ]]; then
             echo "run=true" >> $GITHUB_OUTPUT
             echo "Forced AUR update via commit message"
             exit 0
           fi
           
-          # Always run for manual triggers
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "run=true" >> $GITHUB_OUTPUT
             echo "Manual trigger"
             exit 0
           fi
           
-          # Check for relevant file changes in the last commit
-          if git diff-tree --no-commit-id --name-only -r HEAD | grep -E '^src/|^Cargo\.(toml|lock)$|^README\.md$|^LICENSE
-      
-      - name: Setup SSH for AUR
-        if: steps.should_run.outputs.run == 'true'
-        run: |
-          mkdir -p /root/.ssh
-          echo "${{ secrets.AUR_SSH_KEY }}" > /root/.ssh/aur
-          chmod 600 /root/.ssh/aur
-          chmod 700 /root/.ssh
-          ssh-keyscan aur.archlinux.org >> /root/.ssh/known_hosts
-      
-      - name: Test AUR connection
-        if: steps.should_run.outputs.run == 'true'
-        run: |
-          if ssh -i /root/.ssh/aur -T aur@aur.archlinux.org 2>&1 | grep -q "Welcome to AUR"; then
-            echo "AUR connection successful"
-          else
-            echo "AUR connection failed"
-            exit 1
-          fi
-      
-      - name: Clone AUR git package
-        if: steps.should_run.outputs.run == 'true'
-        run: |
-          export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
-          git clone ssh://aur@aur.archlinux.org/sshctl-git.git aur-repo
-      
-      - name: Calculate development version
-        if: steps.should_run.outputs.run == 'true'
-        id: version
-        run: |
-          # Extract version from Cargo.toml
-          CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-          
-          # Get short commit hash (7 characters)
-          SHORT_HASH=$(git rev-parse --short=7 HEAD)
-          
-          # Create development version: cargo_version-short_hash
-          DEV_VERSION="${CARGO_VERSION}-${SHORT_HASH}"
-          
-          echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
-          echo "Development version: ${DEV_VERSION}"
-          echo "Cargo version: ${CARGO_VERSION}, Commit hash: ${SHORT_HASH}"
-      
-      - name: Create development PKGBUILD
-        if: steps.should_run.outputs.run == 'true'
-        run: |
-          cd aur-repo
-          cat > PKGBUILD << 'PKGBUILD_EOF'
-          # Maintainer: ${{ secrets.AUR_MAINTAINER_NAME }} <${{ secrets.AUR_MAINTAINER_EMAIL }}>
-          pkgname=sshctl-git
-          pkgver=${{ steps.version.outputs.dev_version }}
-          pkgrel=1
-          pkgdesc="SSH connection manager CLI tool (development version)"
-          arch=('x86_64')
-          url="https://github.com/${{ github.repository }}"
-          license=('MIT')
-          depends=('glibc')
-          makedepends=('git' 'rust')
-          provides=('sshctl')
-          conflicts=('sshctl')
-          source=("git+https://github.com/${{ github.repository }}.git")
-          sha256sums=('SKIP')
-
-          pkgver() {
-              cd "${srcdir}/sshctl"
-              local cargo_ver=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-              local short_hash=$(git rev-parse --short=7 HEAD)
-              printf "%s-%s" "${cargo_ver}" "${short_hash}"
-          }
-
-          build() {
-              cd "${srcdir}/sshctl"
-              cargo build --release
-          }
-
-          package() {
-              cd "${srcdir}/sshctl"
-              install -Dm755 "target/release/sshctl" "${pkgdir}/usr/bin/sshctl"
-              
-              if [ -f README.md ]; then
-                  install -Dm644 README.md "${pkgdir}/usr/share/doc/sshctl/README.md"
-              fi
-              
-              if [ -f LICENSE ]; then
-                  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/sshctl/LICENSE"
-              fi
-          }
-          PKGBUILD_EOF
-      
-      - name: Generate .SRCINFO for development package
-        if: steps.should_run.outputs.run == 'true'
-        run: |
-          cd aur-repo
-          
-          # Create non-root user for makepkg
-          useradd -m -s /bin/bash builder
-          
-          # Copy PKGBUILD to builder's home and generate .SRCINFO there
-          cp PKGBUILD /home/builder/
-          chown builder:builder /home/builder/PKGBUILD
-          
-          # Generate .SRCINFO as non-root user
-          su builder -c "cd /home/builder && makepkg --printsrcinfo" > .SRCINFO
-          
-          # Ensure root owns the .SRCINFO in the repo
-          chown root:root .SRCINFO
-      
-      - name: Commit and push development version to AUR
-        if: steps.should_run.outputs.run == 'true'
-        run: |
-          cd aur-repo
-          export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
-          
-          git config user.name "${{ secrets.AUR_MAINTAINER_NAME }}"
-          git config user.email "${{ secrets.AUR_MAINTAINER_EMAIL }}"
-          
-          git add PKGBUILD .SRCINFO
-          
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update development version to ${{ steps.version.outputs.dev_version }}"
-            git push origin master
-            echo "AUR development package updated successfully!"
-          fi
-; then
+          if git diff-tree --no-commit-id --name-only -r HEAD | grep -E '^src/|^Cargo\.(toml|lock)$|^README\.md$|^LICENSE$'; then
             echo "run=true" >> $GITHUB_OUTPUT
             echo "Relevant files changed"
           else
@@ -205,15 +77,9 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         id: version
         run: |
-          # Extract version from Cargo.toml
           CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-          
-          # Get short commit hash (7 characters)
           SHORT_HASH=$(git rev-parse --short=7 HEAD)
-          
-          # Create development version: cargo_version-short_hash
           DEV_VERSION="${CARGO_VERSION}-${SHORT_HASH}"
-          
           echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
           echo "Development version: ${DEV_VERSION}"
           echo "Cargo version: ${CARGO_VERSION}, Commit hash: ${SHORT_HASH}"
@@ -222,7 +88,7 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         run: |
           cd aur-repo
-          cat > PKGBUILD << 'PKGBUILD_EOF'
+          cat > PKGBUILD << 'EOF'
           # Maintainer: ${{ secrets.AUR_MAINTAINER_NAME }} <${{ secrets.AUR_MAINTAINER_EMAIL }}>
           pkgname=sshctl-git
           pkgver=${{ steps.version.outputs.dev_version }}
@@ -262,24 +128,16 @@ jobs:
                   install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/sshctl/LICENSE"
               fi
           }
-          PKGBUILD_EOF
+          EOF
       
       - name: Generate .SRCINFO for development package
         if: steps.should_run.outputs.run == 'true'
         run: |
           cd aur-repo
-          
-          # Create non-root user for makepkg
           useradd -m -s /bin/bash builder
-          
-          # Copy PKGBUILD to builder's home and generate .SRCINFO there
           cp PKGBUILD /home/builder/
           chown builder:builder /home/builder/PKGBUILD
-          
-          # Generate .SRCINFO as non-root user
           su builder -c "cd /home/builder && makepkg --printsrcinfo" > .SRCINFO
-          
-          # Ensure root owns the .SRCINFO in the repo
           chown root:root .SRCINFO
       
       - name: Commit and push development version to AUR
@@ -287,12 +145,9 @@ jobs:
         run: |
           cd aur-repo
           export GIT_SSH_COMMAND="ssh -i /root/.ssh/aur -o StrictHostKeyChecking=no"
-          
           git config user.name "${{ secrets.AUR_MAINTAINER_NAME }}"
           git config user.email "${{ secrets.AUR_MAINTAINER_EMAIL }}"
-          
           git add PKGBUILD .SRCINFO
-          
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
