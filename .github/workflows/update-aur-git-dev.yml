@@ -19,14 +19,12 @@ jobs:
       - name: Check if we should run
         id: should_run
         run: |
-          # Vérifier si le message contient [force-aur]
           if [[ "${{ github.event.head_commit.message }}" == *"[force-aur]"* ]]; then
             echo "run=true" >> $GITHUB_OUTPUT
             echo "Forced AUR update via commit message"
             exit 0
           fi
           
-          # Vérifier les fichiers modifiés (besoin de fetch pour comparer)
           git fetch origin main~1 || true
           if git diff --name-only HEAD~1 HEAD | grep -E '^src/|^Cargo\.(toml|lock)$|^README\.md$|^LICENSE$' || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "run=true" >> $GITHUB_OUTPUT
@@ -71,26 +69,19 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         id: version
         run: |
-          # Get the latest tag
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
-          
-          # Get commit count since latest tag  
-          COMMIT_COUNT=$(git rev-list --count ${LATEST_TAG}..HEAD 2>/dev/null || git rev-list --count HEAD)
-          
-          # Get short commit hash
-          SHORT_HASH=$(git rev-parse --short HEAD)
-          
-          # Create development version: latest_tag.r.commit_count.hash
-          DEV_VERSION="${LATEST_TAG#v}.r${COMMIT_COUNT}.${SHORT_HASH}"
+          CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          SHORT_HASH=$(git rev-parse --short=7 HEAD)
+          DEV_VERSION="${CARGO_VERSION}-${SHORT_HASH}"
           
           echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
           echo "Development version: ${DEV_VERSION}"
+          echo "Cargo version: ${CARGO_VERSION}, Commit hash: ${SHORT_HASH}"
       
       - name: Create development PKGBUILD
         if: steps.should_run.outputs.run == 'true'
         run: |
           cd aur-repo
-          cat > PKGBUILD << EOF
+          cat > PKGBUILD << 'EOF'
           # Maintainer: ${{ secrets.AUR_MAINTAINER_NAME }} <${{ secrets.AUR_MAINTAINER_EMAIL }}>
           pkgname=sshctl-git
           pkgver=${{ steps.version.outputs.dev_version }}
@@ -107,27 +98,29 @@ jobs:
           sha256sums=('SKIP')
 
           pkgver() {
-              cd "\${srcdir}/sshctl"
-              printf "\$(git describe --tags --long 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' || echo '0.0.0.r\$(git rev-list --count HEAD).\$(git rev-parse --short HEAD)')"
+              cd "${srcdir}/sshctl"
+              local cargo_ver=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+              local short_hash=$(git rev-parse --short=7 HEAD)
+              printf "%s-%s" "${cargo_ver}" "${short_hash}"
           }
 
           build() {
-              cd "\${srcdir}/sshctl"
+              cd "${srcdir}/sshctl"
               cargo build --release
           }
 
           package() {
-              cd "\${srcdir}/sshctl"
-              install -Dm755 "target/release/sshctl" "\${pkgdir}/usr/bin/sshctl"
+              cd "${srcdir}/sshctl"
+              install -Dm755 "target/release/sshctl" "${pkgdir}/usr/bin/sshctl"
               
               # Documentation
               if [ -f README.md ]; then
-                  install -Dm644 README.md "\${pkgdir}/usr/share/doc/sshctl/README.md"
+                  install -Dm644 README.md "${pkgdir}/usr/share/doc/sshctl/README.md"
               fi
               
               # License
               if [ -f LICENSE ]; then
-                  install -Dm644 LICENSE "\${pkgdir}/usr/share/licenses/sshctl/LICENSE"
+                  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/sshctl/LICENSE"
               fi
           }
           EOF
