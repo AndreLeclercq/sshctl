@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use super::ConnectionError;
-use crate::config::{
+use crate::ssh::connections::{
     connection_exists, 
     remove_connection, 
 };

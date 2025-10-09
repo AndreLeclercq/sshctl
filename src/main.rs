@@ -1,5 +1,5 @@
-mod config;
 mod commands;
+mod ssh;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};

@@ -1,7 +1,7 @@
 pub mod connection;
 
 use anyhow::{Result, Error, Context};
-use crate::config::{get_connection, connection_exists};
+use crate::ssh::connections::{get_connection, connection_exists};
 use std::{os::unix::process::CommandExt, process::Command};
 
 pub fn connect(name: &str) -> Result<()> {
