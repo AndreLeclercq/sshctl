@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use crate::config::{
+use crate::ssh::connections::{
     get_connection_file_content, 
     Config,
 };
