@@ -7,7 +7,7 @@
 
 **SSHCTL** is a lightweight CLI tool designed to simplify and streamline SSH connection management. It allows you to store, edit, and quickly connect to your servers using intuitive commands. ⚡
 
-**Note:** This project is in its early stages of development. While the core functionality is already usable Currently, the focus is on Linux compatibility, as it aligns with my personal workflow. However, support for **Windows and macOS** is planned if there is community interest—feel free to open an issue or discussions! 💬
+**Note:** Currently, the focus is on Linux compatibility, as it aligns with my personal workflow. However, support for **Windows and macOS** is planned if there is community interest—feel free to open an issue or discussions! 💬
 
 ## 📋 Versioning & Stability
 - **Stable versions:** Tagged releases (e.g., v0.1.0, v0.2.0) are considered stable and production-ready ✅
@@ -23,9 +23,9 @@ cargo build --release
 - **Development version:** [sshctl-git](https://aur.archlinux.org/packages/sshctl-git) (builds from `main` branch)
 ```bash
 # For stable version
-yay -S sshctl
+paru -S sshctl
 # For development version (main branch)
-yay -S sshctl-git
+paru -S sshctl-git
 ```
 
 ## 🚀 Commands
@@ -58,6 +58,7 @@ Config file structure:
 host = "192.168.1.100"
 user = "admin"
 port = 2222
+ssh_key_path = "~/.ssh/id_ed25519"
 description = "This is the prod server. OVH VPS"
 
 [connections.dev-local]
@@ -82,8 +83,8 @@ Built with performance-first mindset using Rust:
 - **Cross-platform** compatibility via dirs crate
 - **Interactive UX** with dialoguer
 
-### 📋 TODO v0.2.x
-- [ ] Manage ssh keys
+### 📋 Roadmap
+- [ ] Manage ssh key
 - [ ] Improve connection commands
 
 ---
