@@ -1,7 +1,8 @@
 # 🔐 SSHCTL
 [![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![AUR](https://img.shields.io/aur/version/sshctl?style=for-the-badge&logo=arch-linux)](https://aur.archlinux.org/packages/sshctl)
+[![AUR SSHCTL](https://img.shields.io/aur/version/sshctl?style=for-the-badge&logo=arch-linux)](https://aur.archlinux.org/packages/sshctl)
+[![AUR](https://img.shields.io/aur/version/sshctl-git?style=for-the-badge&logo=arch-linux&label=aur%20git)](https://aur.archlinux.org/packages/sshctl-git)
 [![GitHub release](https://img.shields.io/github/release/AndreLeclercq/sshctl.svg?style=for-the-badge)](https://github.com/AndreLeclercq/sshctl/releases)
 
 **SSHCTL** is a lightweight CLI tool designed to simplify and streamline SSH connection management. It allows you to store, edit, and quickly connect to your servers using intuitive commands. ⚡
