@@ -1,5 +1,9 @@
 use anyhow::{Context, Result};
-use super::ConnectionError;
+use super::{
+    ConnectionError, 
+    PathCompletion,
+    expand_tilde
+};
 use crate::ssh::connections::{
     connection_exists,
     upsert_connection, 
@@ -56,15 +60,27 @@ pub fn add(name: &str) -> Result<()> {
         .interact_text()
         .unwrap();
 
+
+    let completion = PathCompletion;
     let ssh_key_path: PathBuf = loop { 
         let ssh_key_path_input: String = Input::new()
             .allow_empty(true)
             .with_prompt("SSH key path (optionnal)")
+            .completion_with(&completion)   
             .interact_text()
             .unwrap();
 
         match PathBuf::from_str(&ssh_key_path_input) {
-            Ok(ssh_key_path) => break ssh_key_path,
+            Ok(ssh_key_path) => {
+                let expanded = expand_tilde(&ssh_key_path_input);
+                let expanded_path = PathBuf::from(expanded);
+                
+                if expanded_path.exists() {
+                    break ssh_key_path;
+                } else {
+                    eprintln!("Path does not exists. Try again.");
+                }
+            },
             Err(_) => eprintln!("Invalid SSH Key Path, Try again."), 
         }
     };
