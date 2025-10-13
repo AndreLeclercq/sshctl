@@ -12,6 +12,9 @@ pub struct Connection {
     pub host: Ipv4Addr,
     pub port: u16,
     pub user: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ssh_key_path: Option<PathBuf>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
 

@@ -7,7 +7,12 @@ use crate::ssh::connections::{
     Connection
 };
 use dialoguer::Input;
-use std::{collections::HashMap, net::Ipv4Addr, str::FromStr};
+use std::{
+    collections::HashMap, 
+    net::Ipv4Addr, 
+    str::FromStr,
+    path::PathBuf,
+};
 
 
 pub fn edit(name: &str) -> Result<()> {
@@ -58,9 +63,28 @@ pub fn edit(name: &str) -> Result<()> {
             .interact_text()
             .unwrap();
 
+        let ssh_key_path: PathBuf = loop { 
+            let ssh_key_path_input: String = Input::new()
+                .allow_empty(true)
+                .with_prompt("SSH key path (optionnal)")
+                .with_initial_text(
+                    connection.ssh_key_path
+                        .as_ref()
+                        .and_then(|p| p.to_str())
+                        .unwrap_or("")
+                )
+                .interact_text()
+                .unwrap();
+
+            match PathBuf::from_str(&ssh_key_path_input) {
+                Ok(ssh_key_path) => break ssh_key_path,
+                Err(_) => eprintln!("Invalid SSH Key Path, Try again."), 
+            }
+        };
+
         let description: String = Input::new()
             .allow_empty(true)
-            .with_prompt("Description (optionnal)")
+            .with_prompt("description (optionnal)")
             .with_initial_text(connection.description.as_deref().unwrap_or(""))
             .interact_text()
             .unwrap();
@@ -72,7 +96,16 @@ pub fn edit(name: &str) -> Result<()> {
                 host: host,
                 port: port,
                 user: user,
-                description: Some(description),
+                ssh_key_path: if ssh_key_path.as_os_str().is_empty() {
+                    None 
+                } else {
+                    Some(ssh_key_path)
+                },
+                description: if description.is_empty() {
+                    None 
+                } else {
+                    Some(description)
+                },
             }
         );        
         

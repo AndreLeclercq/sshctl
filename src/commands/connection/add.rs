@@ -6,7 +6,12 @@ use crate::ssh::connections::{
     Connection,
 };
 use dialoguer::Input;
-use std::{collections::HashMap, net::Ipv4Addr, str::FromStr};
+use std::{
+    collections::HashMap, 
+    net::Ipv4Addr, 
+    str::FromStr,
+    path::PathBuf,
+};
 
 pub fn add(name: &str) -> Result<()> { 
     let name_lower: String = name.to_lowercase();
@@ -51,6 +56,19 @@ pub fn add(name: &str) -> Result<()> {
         .interact_text()
         .unwrap();
 
+    let ssh_key_path: PathBuf = loop { 
+        let ssh_key_path_input: String = Input::new()
+            .allow_empty(true)
+            .with_prompt("SSH key path (optionnal)")
+            .interact_text()
+            .unwrap();
+
+        match PathBuf::from_str(&ssh_key_path_input) {
+            Ok(ssh_key_path) => break ssh_key_path,
+            Err(_) => eprintln!("Invalid SSH Key Path, Try again."), 
+        }
+    };
+
     let description: String = Input::new()
         .allow_empty(true)
         .with_prompt("Description (optionnal)")
@@ -64,7 +82,16 @@ pub fn add(name: &str) -> Result<()> {
             host: host,
             port: port,
             user: user,
-            description: Some(description),
+            ssh_key_path: if ssh_key_path.as_os_str().is_empty() {
+                None 
+            } else {
+                Some(ssh_key_path)
+            },
+            description: if description.is_empty() {
+                None 
+            } else {
+                Some(description)
+            },
         }
     );
 
@@ -72,4 +99,3 @@ pub fn add(name: &str) -> Result<()> {
     eprintln!("New connection '{}' add with success !", name_lower);
     Ok(())
 }
-
